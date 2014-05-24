@@ -1,0 +1,13 @@
+@(posts: Seq[models.Post])
+
+Facebook
+@if(posts.isEmpty) {
+    <h2>Please log into your <a href="facebook/login">Facebook</a> account to display your Facebook feed.</h2>
+} else {
+    <ul>
+    @posts.map { p =>
+        <li>@p.message</li>
+    }
+    </ul>
+}
+
