@@ -24,10 +24,11 @@ import securesocial.core.{Identity, Authorization}
 
 object Application extends Controller with securesocial.core.SecureSocial {
 
-  def index = SecuredAction { implicit request =>
-    val userAccessTokens: List[AccessToken] = UserService.getUserAccessTokens(request.user.identityId.userId + request.user.identityId.providerId)
-    val userPosts: Map[Provider, Seq[Post]] = PostService.getPostsForUser(userAccessTokens)
+  def index = SecuredAction {
+    implicit request =>
+      val userAccessTokens = UserService.getUserAccessTokens(UserService.getUserIdFromIdentityId(request.user.identityId))
+      val userPostMap = PostService.getPostsForUser(userAccessTokens)
 
-    Ok(views.html.index(request.user,userPosts))
+      Ok(views.html.index(request.user, userPostMap))
   }
 }

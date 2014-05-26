@@ -8,6 +8,7 @@ object ApplicationBuild extends Build {
   val appVersion = "1.0"
 
   val appDependencies = Seq(
+    cache,
     "com.restfb" % "restfb" % "1.6.14",
     "ws.securesocial" %% "securesocial" % "2.1.3"
   )

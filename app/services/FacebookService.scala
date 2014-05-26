@@ -1,34 +1,56 @@
 package services
-import scala.concurrent.{Await, Future}
-import com.restfb.{FacebookClient, DefaultFacebookClient}
+import com.restfb.DefaultFacebookClient
 import collection.JavaConversions._
-import models.{FacebookPost, Post}
+import models.{Comment, FacebookPost, Post}
 import scala.util.control.Breaks
+import play.api.cache.Cache
+import play.api.Play.current
 
 object FacebookService {
 
-  def getUserPosts(accessToken: String): List[Post] = {
-    val facebookClient: FacebookClient = new DefaultFacebookClient(accessToken)
-    val myFeed = facebookClient.fetchConnection("me/feed", classOf[com.restfb.types.Post])
+  val CACHE_EXPIRATION_SECONDS = 60
+  val MAXIMUM_NUM_POSTS = 10
 
-    val loop = new Breaks
-    var postList: List[Post] = List[Post]()
+  /*
+  Checks if posts associated to passed in accessToken are stored in the cache,
+  if so then it returns what is stored in the cache. Otherwise
+  a call to the Facebook api is made, the result
+  is inserted into the cache with expiration set to CACHE_EXPIRATION_SECONDS
+   */
+  def getUserPosts(accessToken: String): Seq[Post] = {
 
-    loop.breakable {
-      for (myFeedConnectionPage <- myFeed) {
-        val myFilteredFeedConnectionPage = myFeedConnectionPage.filter(p => p.getMessage != null)
-        for (post <- myFilteredFeedConnectionPage) {
-          System.out.println(post)
-          post.getLikesCount match {
-            case numLikes: Any => val fbPost = FacebookPost(posterName = post.getFrom.getName, message = post.getMessage, date = post.getCreatedTime, numLikes = Some(numLikes))
-            case _ => val fbPost = FacebookPost(posterName = post.getFrom.getName, message = post.getMessage, date = post.getCreatedTime)
-              postList :+= fbPost
+      val postSeq = Cache.getOrElse(accessToken, CACHE_EXPIRATION_SECONDS) {
+      val facebookClient = new DefaultFacebookClient(accessToken)
+      val myFeed = facebookClient.fetchConnection("me/feed", classOf[com.restfb.types.Post])
+
+      val loop = new Breaks
+      var postList = List[Post]()
+
+      loop.breakable {
+        for (myFeedConnectionPage <- myFeed) {
+          val myFilteredFeedConnectionPage = myFeedConnectionPage.filter(p => p.getMessage != null)
+          for (post <- myFilteredFeedConnectionPage) {
+            post.getComments match {
+              case restfbCommentList: Any => {
+                var commentList = List[Comment]()
+                for (comment <- restfbCommentList.getData) {
+                  commentList :+= Comment(posterName = comment.getFrom.getName, message = comment.getMessage, date = comment.getCreatedTime)
+                }
+                val fbPost = FacebookPost(posterName = post.getFrom.getName, message = post.getMessage, date = post.getCreatedTime, comments = Some(commentList))
+                postList :+= fbPost
+              }
+              case _ => {
+                val fbPost = FacebookPost(posterName = post.getFrom.getName, message = post.getMessage, date = post.getCreatedTime)
+                postList :+= fbPost
+              }
+            }
+            if (postList.size == MAXIMUM_NUM_POSTS) loop.break
           }
         }
-        if (postList.size >= 10) loop.break
       }
+      postList
     }
-    postList.slice(0, 10)
+    postSeq
   }
 
 }

@@ -1,14 +1,36 @@
 @(posts: Seq[models.Post])
+@import models.Comment
 
 @if(posts.isEmpty) {
-    Please log into your <a href="facebook/login">Facebook</a> account to display your Facebook feed.
+    <p>Please log into your <a href="facebook/login">Facebook</a> account to display your Facebook feed.</p>
 } else {
-    Facebook
+    Facebook Feed
+
     <ul>
-    @posts.map { p =>
-        <li>@p.posterName
-        @p.date
-        @p.message
+        @posts.map { post =>
+            <li>
+                @post match {
+                    case fbPost: FacebookPost => {
+                        @fbPost.date
+                        @fbPost.posterName:
+                        @fbPost.message
+                        @fbPost.comments.map { commentList =>
+                            <ul>
+                                @commentList.map { comment =>
+                                    <li>
+                                        @comment.posterName
+                                        @comment.date
+                                        @comment.message
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
+                    case _ => {
+                    }
+                }
+            </li>
+        }
+
     }
     </ul>
-}

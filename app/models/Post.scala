@@ -12,5 +12,11 @@ case class FacebookPost(
                          message: String,
                          posterName: String,
                          date: Date,
-                         numLikes: Option[Long] = Some(0L)
+                         comments: Option[List[Comment]] = Some(List[Comment]())
                          ) extends Post
+
+case class Comment(
+                    message: String,
+                    posterName: String,
+                    date: Date
+                    ) extends Post

@@ -1,16 +1,14 @@
 package plugins
 
 import services.UserService
-import play.api.{Logger, Application}
+import play.api.Application
 import securesocial.core.providers.Token
 import securesocial.core.{Identity, UserServicePlugin, IdentityId}
 
 class SecureSocialUserService(application: Application) extends UserServicePlugin(application) {
 
-
-
   def find(id: IdentityId): Option[Identity] = {
-    UserService.getUser(id.userId + id.providerId)
+    UserService.getUser(UserService.getUserIdFromIdentityId(id))
   }
 
   def findByEmailAndProvider(email: String, providerId: String): Option[Identity] = {
